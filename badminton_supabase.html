@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>🏸 羽毛球循环赛</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;color:#1a1a1a;background:#f2f1ed;min-height:100vh}
+.app{max-width:740px;margin:0 auto;padding:14px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+header h1{font-size:18px;font-weight:700}
+.sync-ind{font-size:12px;display:flex;align-items:center;gap:5px;color:#999}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:#52a050}
+.sync-dot.syncing{background:#f0a020;animation:blink .8s infinite}
+.sync-dot.err{background:#e04040}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.tabs{display:flex;background:#fff;border-radius:12px 12px 0 0;border:1px solid #e4e3dc;border-bottom:none;overflow-x:auto}
+.tab{flex:1;min-width:0;padding:11px 4px;font-size:12px;cursor:pointer;border:none;background:none;color:#999;border-bottom:2px solid transparent;font-weight:500;white-space:nowrap;text-align:center}
+.tab.active{color:#1a1a1a;border-bottom:2px solid #1a1a1a}
+
+.card{background:#fff;border:1px solid #e4e3dc;border-radius:11px;padding:14px 16px;margin-bottom:10px}
+.card-title{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.card-title .sub{font-size:11px;font-weight:400;color:#999}
+
+input[type=text],input[type=number],select,textarea{padding:7px 10px;font-size:13px;border:1px solid #dddcd5;border-radius:7px;background:#fff;color:#1a1a1a;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:#1a1a1a}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;font-size:13px;border:1px solid #dddcd5;border-radius:7px;background:#fff;color:#1a1a1a;cursor:pointer;font-weight:500;white-space:nowrap;transition:all .15s}
+.btn:hover{background:#f2f1ed}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-primary:hover:not(:disabled){background:#333}
+.btn-sm{padding:4px 9px;font-size:12px}
+.btn-red{border-color:#e04040;color:#e04040}
+.btn-red:hover{background:#fff5f5}
+
+.badge{display:inline-block;padding:2px 6px;border-radius:5px;font-size:11px;font-weight:600}
+.bg-m{background:#dbeafe;color:#1d4ed8}
+.bg-f{background:#fce7f3;color:#9d174d}
+.bg-ok{background:#dcfce7;color:#166534}
+.bg-gray{background:#f3f4f6;color:#555}
+
+.stats-4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat-box{background:#f7f6f2;border-radius:8px;padding:10px;text-align:center}
+.stat-n{font-size:20px;font-weight:700}
+.stat-l{font-size:11px;color:#999;margin-top:2px}
+
+.chip-wrap{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px 4px 8px;border-radius:20px;font-size:12px;border:1px solid #dddcd5;background:#f7f6f2;cursor:pointer;user-select:none;transition:all .15s}
+.chip:hover{border-color:#aaa}
+.chip.on{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.xbtn{border:none;background:none;cursor:pointer;color:#ccc;font-size:14px;padding:0;line-height:1}
+.chip.on .xbtn{color:#aaa}
+
+.mode-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mode-btn{padding:12px;border:1px solid #dddcd5;border-radius:9px;cursor:pointer;text-align:center;background:#fff;transition:all .15s}
+.mode-btn:hover{background:#f7f6f2}
+.mode-btn.active{border:2px solid #1a1a1a;background:#f7f6f2;font-weight:700}
+.mode-icon{font-size:20px;margin-bottom:4px}
+.mode-desc{font-size:11px;color:#999;margin-top:3px}
+
+.cfg-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.cfg-row label{font-size:13px;color:#666;white-space:nowrap}
+
+.suggest-box{background:#fffaeb;border:1px solid #f0d060;border-radius:8px;padding:10px 13px;font-size:12px;color:#7a5c00;margin-top:8px;line-height:1.6}
+.suggest-opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.sug-opt{padding:5px 11px;border-radius:7px;border:1px solid #d4a820;background:#fff8dd;color:#7a5c00;cursor:pointer;font-size:12px;font-weight:600}
+.sug-opt.cur{border:2px solid #b8860b;background:#fef9c3}
+
+.add-row{display:flex;gap:7px;align-items:center;margin-bottom:8px}
+.add-row input[type=text]{flex:1}
+
+.round-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:#f7f6f2;border-radius:9px;margin-bottom:5px;cursor:pointer;user-select:none;border:1px solid transparent;transition:border-color .15s}
+.round-hdr:hover{border-color:#ccc}
+.round-hdr.cur{border-color:#1a1a1a;background:#eeedea}
+.match-card{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;padding:10px 12px;border:1px solid #e4e3dc;border-radius:9px;margin-bottom:5px;background:#fff;transition:background .2s}
+.match-card.done{background:#f9f8f5}
+.ta{text-align:right}.tb{text-align:left}
+.tm{font-weight:700;font-size:13px}
+.ts{font-size:11px;color:#aaa;margin-top:1px}
+.sc-col{display:flex;flex-direction:column;align-items:center;gap:5px}
+.sc-row{display:flex;align-items:center;gap:4px}
+.sc-row input{width:44px;text-align:center;font-size:14px;font-weight:700;padding:5px;border:1px solid #dddcd5;border-radius:6px;transition:border-color .15s}
+.sc-row input:focus{border-color:#1a1a1a}
+.vs{color:#ccc;font-size:12px}
+.court-tag{font-size:10px;background:#e0eeff;color:#1a5fa8;border-radius:4px;padding:2px 6px;font-weight:700}
+.ok-btn{padding:4px 11px;font-size:12px;border-radius:6px;border:1px solid #1a1a1a;background:#1a1a1a;color:#fff;cursor:pointer;font-weight:600;transition:all .15s}
+.ok-btn:hover{background:#333}
+.ok-btn.edit{background:#fff;color:#1a1a1a;border-color:#aaa}
+.win-tag{font-size:10px;background:#dcfce7;color:#166534;border-radius:4px;padding:1px 5px;font-weight:700;margin:0 2px;vertical-align:middle}
+.rest-strip{padding:7px 13px;font-size:12px;color:#999;background:#fffdf5;border:1px solid #ede8c0;border-radius:7px;margin-top:4px}
+.score-big{font-size:24px;font-weight:700;letter-spacing:3px;padding:4px 0;color:#1a1a1a}
+.score-big .sep{color:#ddd;font-weight:300;margin:0 6px}
+.pending-txt{font-size:13px;color:#ccc;padding:4px 0}
+
+.prog-track{background:#e4e3dc;border-radius:3px;height:5px;margin:5px 0}
+.prog-fill{height:100%;background:#1a1a1a;border-radius:3px;transition:width .5s}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:7px 8px;font-size:11px;font-weight:700;color:#999;border-bottom:1px solid #e4e3dc;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid #f0efe8;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf7}
+.r1{color:#b8860b;font-weight:700}.r2{color:#777;font-weight:700}.r3{color:#8b4513;font-weight:700}
+
+.wr-bar{display:inline-block;width:50px;height:5px;background:#e4e3dc;border-radius:3px;vertical-align:middle;margin:0 4px}
+.wr-fill{height:100%;border-radius:3px;background:#1a1a1a}
+
+.ld-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0efe8}
+.ld-row:last-child{border-bottom:none}
+.ld-track{flex:1;background:#e4e3dc;border-radius:3px;height:7px}
+.ld-fill{height:100%;border-radius:3px;background:#1a1a1a;transition:width .4s}
+
+.mb-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0efe8}
+.mb-row:last-child{border-bottom:none}
+.mb-left{display:flex;align-items:center;gap:9px}
+.avatar{width:32px;height:32px;border-radius:50%;background:#e8e7e0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#666;flex-shrink:0}
+
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;margin:10px 0 16px}
+.pod{display:flex;flex-direction:column;align-items:center;gap:5px}
+.pod-block{border-radius:7px 7px 0 0;width:80px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.pod-name{font-size:12px;font-weight:700;text-align:center;max-width:80px;word-break:break-all}
+.pod-sub{font-size:11px;color:#999;text-align:center}
+
+.sess-card{border:1px solid #e4e3dc;border-radius:9px;overflow:hidden;margin-bottom:8px}
+.sess-hdr{background:#f7f6f2;padding:9px 13px;display:flex;justify-content:space-between;align-items:center}
+.sess-body{padding:9px 13px}
+
+.pos{color:#166534;font-weight:600}
+.neg{color:#991b1b;font-weight:600}
+.empty{text-align:center;padding:24px;color:#ccc;font-size:13px}
+.info-text{font-size:12px;color:#999;margin-top:7px;text-align:center;line-height:1.6}
+.warn-text{font-size:12px;color:#c0392b;margin-top:7px;text-align:center}
+
+/* Role banner */
+.role-banner{padding:10px 14px;border-radius:9px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:8px;line-height:1.5}
+.role-banner.admin{background:#fef3c7;border:1px solid #f0d060;color:#7a5000}
+.role-banner.viewer{background:#e0f2fe;border:1px solid #7dd3fc;color:#075985}
+
+/* Setup overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:999;padding:16px}
+.overlay-box{background:#fff;border-radius:16px;padding:24px;max-width:440px;width:100%;max-height:90vh;overflow-y:auto}
+.overlay-box h2{font-size:17px;font-weight:700;margin-bottom:8px}
+.overlay-box p{font-size:13px;color:#666;margin-bottom:14px;line-height:1.7}
+.field-label{font-size:12px;font-weight:600;color:#555;margin-bottom:4px}
+.field-wrap{margin-bottom:12px}
+.field-wrap input{width:100%}
+.hint{font-size:11px;color:#999;margin-top:4px;line-height:1.5}
+.role-pick{display:flex;gap:8px;margin-bottom:16px}
+.role-opt{flex:1;padding:10px;border:1px solid #dddcd5;border-radius:8px;cursor:pointer;text-align:center;font-size:13px;transition:all .15s}
+.role-opt:hover{background:#f7f6f2}
+.role-opt.active{border:2px solid #1a1a1a;background:#f7f6f2;font-weight:700}
+.role-icon{font-size:20px;margin-bottom:4px}
+
+/* QR share */
+#qr-wrap{text-align:center;padding:8px 0}
+#qr-wrap canvas,#qr-wrap img{border-radius:8px;border:4px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+#share-url-box{font-size:11px;color:#555;word-break:break-all;margin-top:8px;background:#f7f6f2;padding:8px 10px;border-radius:7px;cursor:pointer;border:1px solid #e4e3dc}
+#share-url-box:hover{border-color:#aaa}
+
+.copy-hint{font-size:11px;color:#999;text-align:center;margin-top:4px}
+
+@media(max-width:500px){
+  .stats-4{grid-template-columns:repeat(2,1fr)}
+  .match-card{gap:3px;padding:8px 9px}
+  .sc-row input{width:38px}
+  .tab{font-size:11px;padding:10px 3px}
+  .overlay-box{padding:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Setup Overlay ── -->
+<div class="overlay" id="cfg-overlay">
+  <div class="overlay-box">
+    <h2>⚙️ 连接配置</h2>
+    <p>填入 Supabase 项目信息，完成后即可使用实时共享功能。<br>
+    <strong>在哪找：</strong>Supabase 控制台 → 你的项目 → Settings → API</p>
+
+    <div class="field-wrap">
+      <div class="field-label">Project URL</div>
+      <input type="text" id="cfg-url" placeholder="https://xxxxxxxxxxxxxx.supabase.co">
+      <div class="hint">格式：https://你的项目ID.supabase.co</div>
+    </div>
+    <div class="field-wrap">
+      <div class="field-label">anon public key</div>
+      <input type="text" id="cfg-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+      <div class="hint">在 API Keys 部分找到「anon public」那一行</div>
+    </div>
+
+    <div class="field-label" style="margin-bottom:8px">你的身份</div>
+    <div class="role-pick">
+      <div class="role-opt active" id="role-admin" onclick="pickRole('admin')">
+        <div class="role-icon">🏸</div>
+        管理员<br><span style="font-size:11px;color:#888;font-weight:400">录入比分·管理赛程</span>
+      </div>
+      <div class="role-opt" id="role-viewer" onclick="pickRole('viewer')">
+        <div class="role-icon">👀</div>
+        观看者<br><span style="font-size:11px;color:#888;font-weight:400">实时查看·只读</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%;padding:11px;font-size:14px;justify-content:center" onclick="saveCfg()" id="connect-btn">连接</button>
+    <div id="cfg-err" style="color:#c0392b;font-size:12px;margin-top:8px;text-align:center;min-height:18px"></div>
+  </div>
+</div>
+
+<!-- ── Main App ── -->
+<div class="app" id="main-app" style="display:none">
+  <header>
+    <h1>🏸 羽毛球循环赛</h1>
+    <div class="sync-ind">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-txt">连接中</span>
+    </div>
+  </header>
+
+  <div class="role-banner" id="role-banner"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="go('setup')">⚙️ 设置</button>
+    <button class="tab" onclick="go('schedule')">📋 赛程</button>
+    <button class="tab" onclick="go('ranking')">🏆 本场</button>
+    <button class="tab" onclick="go('hall')">📊 总榜</button>
+    <button class="tab" onclick="go('members')">👥 球员库</button>
+  </div>
+
+  <!-- SETUP -->
+  <div id="p-setup">
+    <div class="card">
+      <div class="card-title">赛制设置</div>
+      <div class="mode-row">
+        <div class="mode-btn active" id="mb-free" onclick="setMode('free')">
+          <div class="mode-icon">👥</div>自由双打
+          <div class="mode-desc">不限男女搭档</div>
+        </div>
+        <div class="mode-btn" id="mb-mixed" onclick="setMode('mixed')">
+          <div class="mode-icon">⚧️</div>混合双打
+          <div class="mode-desc">每队须一男一女</div>
+        </div>
+      </div>
+      <div class="cfg-row">
+        <label>🏟 场地数</label>
+        <input type="number" id="n-courts" value="2" min="1" max="10" style="width:65px" oninput="onCfgChange()">
+        <label>🔄 轮数</label>
+        <input type="number" id="n-rounds" value="8" min="1" max="60" style="width:65px" oninput="onCfgChange()">
+        <span id="cfg-preview" style="font-size:12px;color:#999"></span>
+      </div>
+      <div id="suggest-box" class="suggest-box" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">本次参赛选手 <span class="sub">已选 <span id="cnt-sel">0</span> 人</span></div>
+      <div id="qp-wrap" style="display:none;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:6px">从球员库快速选择</div>
+        <div class="chip-wrap" id="qp-chips"></div>
+      </div>
+      <div class="add-row" id="add-row">
+        <input type="text" id="inp-name" placeholder="输入新球员姓名，回车添加" onkeydown="if(event.key==='Enter')addPlayer()" list="name-dl">
+        <datalist id="name-dl"></datalist>
+        <div id="gender-wrap" style="display:none">
+          <select id="sel-gender"><option value="m">男</option><option value="f">女</option></select>
+        </div>
+        <button class="btn btn-primary" onclick="addPlayer()">＋ 添加</button>
+      </div>
+      <div id="sel-players"></div>
+    </div>
+
+    <div class="card" id="gen-card" style="display:none">
+      <div class="stats-4" id="setup-stats"></div>
+      <button class="btn btn-primary" id="gen-btn" style="width:100%;padding:11px;font-size:14px;justify-content:center" onclick="generate()">▶ 生成赛程并开始</button>
+      <div id="gen-warn"></div>
+    </div>
+
+    <!-- Share card -->
+    <div class="card" id="share-card" style="display:none">
+      <div class="card-title">📲 分享给球友</div>
+      <div id="qr-wrap"></div>
+      <div id="share-url-box" onclick="copyURL()" title="点击复制链接"></div>
+      <div class="copy-hint" id="copy-hint">点击链接可复制，发给球友扫码即可实时查看</div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="p-schedule" style="display:none">
+    <div class="card">
+      <div class="stats-4" id="sch-stats" style="margin-bottom:8px"></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#999;margin-bottom:4px">
+        <span>比赛进度</span><span id="prog-txt"></span>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="prog-bar" style="width:0"></div></div>
+    </div>
+    <div id="rounds-wrap"></div>
+    <div id="finish-wrap" style="display:none;margin-top:8px">
+      <button class="btn btn-primary" style="width:100%;padding:11px;font-size:14px;justify-content:center" onclick="finishSession()">🏁 结束比赛，计入历史总榜</button>
+    </div>
+  </div>
+
+  <!-- RANKING -->
+  <div id="p-ranking" style="display:none">
+    <div class="card">
+      <div class="card-title">🏆 本场排名 <span class="sub">胜场优先，净胜分次之</span></div>
+      <table>
+        <thead><tr>
+          <th style="width:28px">名</th><th>选手</th>
+          <th style="text-align:center">胜</th><th style="text-align:center">负</th>
+          <th style="text-align:center">胜率</th>
+          <th style="text-align:center">净胜</th><th style="text-align:center">场均</th>
+        </tr></thead>
+        <tbody id="rank-body"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">上场均衡度</div>
+      <div id="load-chart"></div>
+    </div>
+  </div>
+
+  <!-- HALL -->
+  <div id="p-hall" style="display:none">
+    <div class="card">
+      <div class="card-title">📊 历史总积分榜 <span class="sub">胜场×2 + 净胜分÷10</span></div>
+      <div id="podium"></div>
+      <table>
+        <thead><tr>
+          <th style="width:28px">名</th><th>球员</th>
+          <th style="text-align:center">参赛</th>
+          <th style="text-align:center">胜/场</th>
+          <th style="text-align:center">胜率</th>
+          <th style="text-align:center">净胜</th>
+          <th style="text-align:center">积分</th>
+        </tr></thead>
+        <tbody id="hall-body"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">历史赛事 <span class="sub"><span id="sess-cnt">0</span> 次</span></div>
+      <div id="sess-list"></div>
+    </div>
+  </div>
+
+  <!-- MEMBERS -->
+  <div id="p-members" style="display:none">
+    <div class="card">
+      <div class="card-title">👥 球员库 <span class="sub">添加过的球员自动入库</span></div>
+      <div class="add-row" id="mb-add-row" style="margin-bottom:12px">
+        <input type="text" id="mb-inp" placeholder="手动新增球员" onkeydown="if(event.key==='Enter')addMember()" style="flex:1">
+        <select id="mb-gender"><option value="any">不限</option><option value="m">男</option><option value="f">女</option></select>
+        <button class="btn btn-primary" onclick="addMember()">入库</button>
+      </div>
+      <div id="mb-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CFG
+const CFG_KEY = 'bmt_supa_cfg';
+let CFG = null;
+let isAdmin = false;
+let selectedRole = 'admin';
+
+// ═══════════════════════════════════════════
+// State (synced with Supabase)
+let mode='free', courts=2, numRounds=8;
+let players=[], rounds=[], nid=1;
+let memberDB=[], history=[];
+let rowId = null;       // Supabase row id
+let supabase = null;
+let realtimeSub = null;
+let _pushing = false;
+let _lastRemoteTs = 0;
+
+// ═══════════════════════════════════════════
+// Utils
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function $id(id){return document.getElementById(id);}
+function medals(i){return['🥇','🥈','🥉'][i]||'';}
+function rcls(i){return['r1','r2','r3'][i]||'';}
+
+// ═══════════════════════════════════════════
+// Overlay role pick
+function pickRole(r){
+  selectedRole=r;
+  $id('role-admin').classList.toggle('active',r==='admin');
+  $id('role-viewer').classList.toggle('active',r==='viewer');
+}
+
+// ═══════════════════════════════════════════
+// Save / load CFG
+function saveCfg(){
+  const url=$id('cfg-url').value.trim();
+  const key=$id('cfg-key').value.trim();
+  if(!url||!key){$id('cfg-err').textContent='请填写 URL 和 Key';return;}
+  if(!url.startsWith('https://')){$id('cfg-err').textContent='URL 格式不对，需以 https:// 开头';return;}
+  CFG={url,key,role:selectedRole};
+  localStorage.setItem(CFG_KEY,JSON.stringify(CFG));
+  $id('cfg-overlay').style.display='none';
+  $id('main-app').style.display='block';
+  initSupabase();
+}
+
+function loadCfg(){
+  try{CFG=JSON.parse(localStorage.getItem(CFG_KEY)||'null');}catch(e){CFG=null;}
+}
+
+// ═══════════════════════════════════════════
+// Supabase init (using REST API directly — no npm needed)
+function initSupabase(){
+  isAdmin = CFG.role==='admin';
+  renderRoleBanner();
+  setSyncState('syncing','连接中…');
+
+  // We'll use Supabase REST + Realtime directly via fetch + WebSocket
+  supabase = {
+    url: CFG.url.replace(/\/$/, ''),
+    key: CFG.key,
+    headers: {
+      'apikey': CFG.key,
+      'Authorization': 'Bearer '+CFG.key,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }
+  };
+
+  loadFromSupabase().then(()=>{
+    setSyncState('ok','已连接');
+    startRealtime();
+    renderShare();
+    renderAll();
+  }).catch(e=>{
+    setSyncState('err','连接失败');
+    $id('cfg-overlay').style.display='flex';
+    $id('cfg-err').textContent='连接失败：'+(e.message||e);
+    $id('main-app').style.display='none';
+    console.error(e);
+  });
+}
+
+// ═══════════════════════════════════════════
+// REST helpers
+async function sbFetch(path, opts={}){
+  const res = await fetch(supabase.url+path, {
+    headers: supabase.headers,
+    ...opts
+  });
+  if(!res.ok){
+    const txt = await res.text();
+    throw new Error(txt||res.status);
+  }
+  const ct = res.headers.get('content-type')||'';
+  if(ct.includes('json')) return res.json();
+  return null;
+}
+
+async function loadFromSupabase(){
+  const data = await sbFetch('/rest/v1/tournament?select=*&limit=1&order=id.asc');
+  if(data && data.length>0){
+    applyRow(data[0]);
+  }
+}
+
+function applyRow(row){
+  if(!row) return;
+  rowId = row.id;
+  const d = row.data || {};
+  _lastRemoteTs = row.updated_at ? new Date(row.updated_at).getTime() : 0;
+  mode      = d.mode      || 'free';
+  courts    = d.courts    || 2;
+  numRounds = d.numRounds || 8;
+  players   = d.players   || [];
+  rounds    = d.rounds    || [];
+  nid       = d.nid       || 1;
+  memberDB  = d.memberDB  || [];
+  history   = d.history   || [];
+  // sync inputs
+  $id('n-courts').value = courts;
+  $id('n-rounds').value = numRounds;
+  $id('mb-free').classList.toggle('active', mode==='free');
+  $id('mb-mixed').classList.toggle('active', mode==='mixed');
+  $id('gender-wrap').style.display = mode==='mixed'?'inline-block':'none';
+  renderAll();
+}
+
+async function pushToSupabase(){
+  if(!isAdmin || _pushing) return;
+  _pushing = true;
+  setSyncState('syncing','同步中…');
+  const payload = {
+    data: {mode,courts,numRounds,players,rounds,nid,memberDB,history},
+    updated_at: new Date().toISOString()
+  };
+  try{
+    if(rowId){
+      await sbFetch(`/rest/v1/tournament?id=eq.${rowId}`, {
+        method:'PATCH', body:JSON.stringify(payload)
+      });
+    }else{
+      const res = await sbFetch('/rest/v1/tournament', {
+        method:'POST', body:JSON.stringify(payload)
+      });
+      if(res&&res[0]) rowId=res[0].id;
+    }
+    setSyncState('ok','已同步');
+  }catch(e){
+    setSyncState('err','同步失败');
+    console.error('push err',e);
+  }finally{
+    _pushing=false;
+  }
+}
+
+// ═══════════════════════════════════════════
+// Realtime via Supabase Realtime WebSocket
+function startRealtime(){
+  try{
+    // Supabase realtime endpoint
+    const wsUrl = supabase.url.replace('https://','wss://').replace('http://','ws://')
+      + '/realtime/v1/websocket?vsn=1.0.0&apikey=' + supabase.key;
+
+    const ws = new WebSocket(wsUrl);
+    let heartbeat;
+
+    ws.onopen = ()=>{
+      // Subscribe to postgres changes on tournament table
+      ws.send(JSON.stringify({
+        topic: 'realtime:public:tournament',
+        event: 'phx_join',
+        payload: {
+          config: {
+            broadcast: {self:false},
+            presence: {key:''},
+            postgres_changes: [{event:'*', schema:'public', table:'tournament'}]
+          }
+        },
+        ref: '1'
+      }));
+      // Heartbeat every 25s
+      heartbeat = setInterval(()=>{
+        ws.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'}));
+      }, 25000);
+      setSyncState('ok','实时同步');
+    };
+
+    ws.onmessage = async(e)=>{
+      try{
+        const msg = JSON.parse(e.data);
+        if(msg.event === 'postgres_changes' || (msg.payload&&msg.payload.data&&msg.payload.data.type)){
+          // Remote change detected — reload from DB
+          if(!_pushing){
+            const data = await sbFetch('/rest/v1/tournament?select=*&limit=1&order=id.asc');
+            if(data&&data.length>0) applyRow(data[0]);
+          }
+        }
+      }catch(err){}
+    };
+
+    ws.onerror = ()=>{ clearInterval(heartbeat); fallbackPoll(); };
+    ws.onclose = ()=>{ clearInterval(heartbeat); setTimeout(startRealtime, 5000); };
+
+    realtimeSub = ()=>{ clearInterval(heartbeat); ws.close(); };
+  }catch(e){
+    fallbackPoll();
+  }
+}
+
+let _pollTimer;
+function fallbackPoll(){
+  setSyncState('ok','轮询同步(3s)');
+  clearInterval(_pollTimer);
+  _pollTimer = setInterval(async()=>{
+    if(_pushing) return;
+    try{
+      const data = await sbFetch('/rest/v1/tournament?select=*&limit=1&order=id.asc');
+      if(data&&data.length>0){
+        const ts = new Date(data[0].updated_at).getTime();
+        if(ts > _lastRemoteTs){ _lastRemoteTs=ts; applyRow(data[0]); }
+      }
+    }catch(e){}
+  }, 3000);
+}
+
+// ═══════════════════════════════════════════
+// Share card + QR
+function renderShare(){
+  const card=$id('share-card');
+  if(!isAdmin){card.style.display='none';return;}
+  card.style.display='block';
+  const base = window.location.href.split('?')[0];
+  const viewerUrl = `${base}?url=${encodeURIComponent(CFG.url)}&key=${encodeURIComponent(CFG.key)}&role=viewer`;
+  $id('share-url-box').textContent = viewerUrl;
+  // QR via Google Charts API (国内可访问)
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(viewerUrl)}`;
+  // Fallback: use a CDN QR lib
+  const wrap=$id('qr-wrap');
+  wrap.innerHTML=`<img src="${qrApiUrl}" width="160" height="160" alt="二维码" onerror="this.style.display='none'" style="border-radius:8px">`;
+}
+
+function copyURL(){
+  const url=$id('share-url-box').textContent;
+  navigator.clipboard.writeText(url).then(()=>{
+    $id('copy-hint').textContent='✓ 已复制！发给球友即可';
+    setTimeout(()=>$id('copy-hint').textContent='点击链接可复制，发给球友扫码即可实时查看',2000);
+  }).catch(()=>{
+    prompt('复制此链接：',url);
+  });
+}
+
+// ═══════════════════════════════════════════
+// Sync state indicator
+function setSyncState(s, txt){
+  const dot=$id('sync-dot');
+  dot.className='sync-dot '+(s||'');
+  $id('sync-txt').textContent=txt;
+}
+
+// ═══════════════════════════════════════════
+// Role banner
+function renderRoleBanner(){
+  const b=$id('role-banner');
+  if(isAdmin){
+    b.className='role-banner admin';
+    b.innerHTML='<span style="font-size:18px">🏸</span><div><strong>管理员模式</strong> — 你可以录入比分、管理赛程<br><span style="font-size:11px;opacity:.75">在「设置」页面扫码/复制链接分享给球友，他们实时查看</span></div>';
+  }else{
+    b.className='role-banner viewer';
+    b.innerHTML='<span style="font-size:18px">👀</span><div><strong>观看者模式</strong> — 实时查看赛程与比分，数据自动更新</div>';
+  }
+}
+
+// ═══════════════════════════════════════════
+// Admin guard
+function guardAdmin(){if(!isAdmin){alert('只有管理员可以操作');return false;}return true;}
+
+function lockViewerUI(){
+  if(isAdmin)return;
+  [$id('add-row'),$id('mb-add-row')].forEach(el=>{if(el)el.style.display='none';});
+  [$id('mb-free'),$id('mb-mixed'),$id('n-courts'),$id('n-rounds'),$id('gen-btn')].forEach(el=>{
+    if(el){el.disabled=true;el.style.opacity='.45';el.style.pointerEvents='none';}
+  });
+}
+
+// ═══════════════════════════════════════════
+// Render all
+function renderAll(){
+  renderQuickPick();renderSetup();
+  renderScheduleIfVisible();
+  renderRanking();renderHall();renderMemberDBUI();updateDatalist();
+  lockViewerUI();
+}
+
+// ═══════════════════════════════════════════
+// Round suggestions
+function suggestRounds(n,c){
+  const sugs=[];
+  for(let r=4;r<=40;r++){
+    const total=r*4*c,avg=total/n;
+    if(avg<3)continue;
+    if(total%n===0){sugs.push({r,avg:Math.round(avg),perfect:true});}
+    else if(Math.abs(avg-Math.round(avg))<0.15){sugs.push({r,avg:Math.round(avg),perfect:false});}
+    if(sugs.length>=4)break;
+  }
+  return sugs;
+}
+function applyRound(r){numRounds=r;$id('n-rounds').value=r;renderSetup();}
+
+// ═══════════════════════════════════════════
+// Mode & config
+function setMode(m){
+  if(!guardAdmin())return;
+  mode=m;
+  $id('mb-free').classList.toggle('active',m==='free');
+  $id('mb-mixed').classList.toggle('active',m==='mixed');
+  $id('gender-wrap').style.display=m==='mixed'?'inline-block':'none';
+  renderSetup();
+}
+function onCfgChange(){
+  courts=parseInt($id('n-courts').value)||2;
+  numRounds=parseInt($id('n-rounds').value)||8;
+  renderSetup();
+}
+
+// ═══════════════════════════════════════════
+// Member DB
+function addMember(){
+  if(!guardAdmin())return;
+  const inp=$id('mb-inp'),name=inp.value.trim();if(!name)return;
+  if(memberDB.find(m=>m.name===name)){alert('该球员已在库中');return;}
+  const gender=$id('mb-gender').value;
+  memberDB.push({id:'m'+Date.now(),name,gender,addedAt:Date.now()});
+  inp.value='';pushToSupabase();renderMemberDBUI();renderQuickPick();updateDatalist();
+}
+function deleteMember(id){
+  if(!guardAdmin())return;if(!confirm('确定删除？'))return;
+  memberDB=memberDB.filter(m=>m.id!==id);
+  pushToSupabase();renderMemberDBUI();renderQuickPick();updateDatalist();
+}
+function autoAddToMem(name,gender){
+  if(!memberDB.find(m=>m.name===name))
+    memberDB.push({id:'m'+Date.now()+Math.floor(Math.random()*9999),name,gender,addedAt:Date.now()});
+}
+function renderMemberDBUI(){
+  const el=$id('mb-list');
+  if(!memberDB.length){el.innerHTML='<div class="empty">球员库为空，添加球员后自动入库</div>';return;}
+  const hs=hallStats();
+  el.innerHTML=[...memberDB].sort((a,b)=>{
+    const sa=(hs[a.name]||{sessions:0}).sessions,sb=(hs[b.name]||{sessions:0}).sessions;return sb-sa;
+  }).map(m=>{
+    const s=hs[m.name]||{sessions:0,wins:0,played:0};
+    const wr=s.played>0?Math.round(s.wins/s.played*100):null;
+    const gb=m.gender!=='any'?`<span class="badge ${m.gender==='m'?'bg-m':'bg-f'}">${m.gender==='m'?'男':'女'}</span>`:'';
+    return `<div class="mb-row">
+      <div class="mb-left">
+        <div class="avatar">${esc(m.name.charAt(0))}</div>
+        <div>
+          <div style="font-size:13px;font-weight:600">${esc(m.name)} ${gb}</div>
+          <div style="font-size:11px;color:#999">参赛${s.sessions}次·${s.wins}胜/${s.played}场${wr!==null?`·<span style="font-weight:600;color:${wr>=60?'#166534':wr<40?'#991b1b':'#7a5c00'}">${wr}%</span>`:''}</div>
+        </div>
+      </div>
+      ${isAdmin?`<button class="btn btn-sm btn-red" onclick="deleteMember('${esc(m.id)}')">删除</button>`:''}
+    </div>`;
+  }).join('');
+}
+function renderQuickPick(){
+  const wrap=$id('qp-wrap');
+  if(!memberDB.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  const inGame=new Set(players.map(p=>p.name));
+  $id('qp-chips').innerHTML=memberDB.map(m=>{
+    const on=inGame.has(m.name);
+    const gb=m.gender!=='any'?`<span class="badge ${m.gender==='m'?'bg-m':'bg-f'}">${m.gender==='m'?'男':'女'}</span>`:'';
+    return `<span class="chip${on?' on':''}" onclick="toggleChip('${esc(m.id)}')">
+      ${gb}${esc(m.name)}${on?'<span class="xbtn">✓</span>':''}
+    </span>`;
+  }).join('');
+}
+function toggleChip(mid){
+  if(!guardAdmin())return;
+  const m=memberDB.find(x=>x.id===mid);if(!m)return;
+  const idx=players.findIndex(p=>p.name===m.name);
+  if(idx>=0){
+    if(rounds.length&&!confirm('已生成赛程，移除选手将清空赛程，确定？'))return;
+    players.splice(idx,1);if(rounds.length)rounds=[];
+  }else{
+    const g=mode==='mixed'?(m.gender!=='any'?m.gender:'m'):m.gender;
+    players.push({id:nid++,name:m.name,gender:g,wins:0,losses:0,pf:0,pa:0,played:0});
+  }
+  renderQuickPick();renderSetup();pushToSupabase();
+}
+function updateDatalist(){
+  const used=new Set(players.map(p=>p.name));
+  $id('name-dl').innerHTML=memberDB.filter(m=>!used.has(m.name)).map(m=>`<option value="${esc(m.name)}">`).join('');
+}
+
+// ═══════════════════════════════════════════
+// Add player
+function addPlayer(){
+  if(!guardAdmin())return;
+  const inp=$id('inp-name'),name=inp.value.trim();if(!name)return;
+  if(players.find(p=>p.name===name)){alert('已在列表中');inp.value='';return;}
+  const g=mode==='mixed'?$id('sel-gender').value:(memberDB.find(m=>m.name===name)?.gender||'any');
+  players.push({id:nid++,name,gender:g,wins:0,losses:0,pf:0,pa:0,played:0});
+  autoAddToMem(name,g);inp.value='';inp.focus();
+  renderQuickPick();renderSetup();pushToSupabase();updateDatalist();
+}
+function removeFromSession(id){
+  if(!guardAdmin())return;
+  if(rounds.length&&!confirm('已生成赛程，确定移除？'))return;
+  players=players.filter(p=>p.id!==id);if(rounds.length)rounds=[];
+  renderQuickPick();renderSetup();pushToSupabase();
+}
+
+// ═══════════════════════════════════════════
+// Render setup
+function renderSetup(){
+  const n=players.length;
+  $id('cnt-sel').textContent=n;
+  const el=$id('sel-players');
+  if(!n){el.innerHTML='<div class="empty" style="padding:12px">还没有本次参赛选手</div>';}
+  else{el.innerHTML='<div class="chip-wrap" style="margin-top:8px">'+players.map(p=>`
+    <span class="chip on">
+      ${mode==='mixed'?`<span class="badge ${p.gender==='m'?'bg-m':'bg-f'}">${p.gender==='m'?'男':'女'}</span>`:''}
+      ${esc(p.name)}
+      ${isAdmin?`<button class="xbtn" onclick="removeFromSession(${p.id})">×</button>`:''}
+    </span>`).join('')+'</div>';}
+  const gc=$id('gen-card');
+  gc.style.display=n>=4?'block':'none';if(n<4)return;
+  const ms=players.filter(p=>p.gender==='m').length,fs=players.filter(p=>p.gender==='f').length;
+  const total=courts*numRounds,avg=(total*4/n).toFixed(1);
+  $id('cfg-preview').textContent=`共${total}场`;
+  $id('setup-stats').innerHTML=`
+    <div class="stat-box"><div class="stat-n">${n}</div><div class="stat-l">选手</div></div>
+    <div class="stat-box"><div class="stat-n">${courts}</div><div class="stat-l">场地</div></div>
+    <div class="stat-box"><div class="stat-n">${numRounds}</div><div class="stat-l">轮数</div></div>
+    <div class="stat-box"><div class="stat-n">${avg}</div><div class="stat-l">人均场数</div></div>
+  `;
+  const sugs=suggestRounds(n,courts);
+  const sb=$id('suggest-box');
+  if(sugs.length&&isAdmin){
+    sb.style.display='block';
+    sb.innerHTML=`<strong>💡 均衡轮数建议（${n}人/${courts}场地）</strong><br>选以下轮数让每人上场次数最平均：
+      <div class="suggest-opts">${sugs.map(s=>`<span class="sug-opt${s.r===numRounds?' cur':''}" onclick="applyRound(${s.r})">${s.r}轮 <span style="font-size:10px;opacity:.7">人均${s.avg}场${s.perfect?'✓':'≈'}</span></span>`).join('')}</div>`;
+  }else sb.style.display='none';
+  const warn=$id('gen-warn');
+  if(mode==='mixed'&&(ms<2||fs<2))warn.innerHTML='<div class="warn-text">⚠️ 混双需要至少2男2女</div>';
+  else warn.innerHTML=`<div class="info-text">预计每人平均上场 ${avg} 场（${courts}场地 × ${numRounds}轮 × 4人/场 ÷ ${n}人）</div>`;
+}
+
+// ═══════════════════════════════════════════
+// Generate schedule
+function generate(){
+  if(!guardAdmin())return;
+  if(players.length<4){alert('至少需要4名选手');return;}
+  if(mode==='mixed'){
+    const ms=players.filter(p=>p.gender==='m').length,fs=players.filter(p=>p.gender==='f').length;
+    if(ms<2||fs<2){alert('混双需至少2男2女');return;}
+  }
+  if(rounds.length&&!confirm('重新生成将清空已有比分，确定吗？'))return;
+  players.forEach(p=>{p.wins=0;p.losses=0;p.pf=0;p.pa=0;p.played=0;});
+  const pool=buildPool();shuffle(pool);
+  const pc={};players.forEach(p=>pc[p.id]=0);
+  const used=new Set();rounds=[];
+  for(let r=0;r<numRounds;r++){
+    const rm=[],busy=new Set();
+    const cands=[...pool].sort((a,b)=>Math.min(...ids4(a).map(id=>pc[id]||0))-Math.min(...ids4(b).map(id=>pc[id]||0)));
+    for(const fresh of[true,false]){
+      for(const m of cands){
+        if(rm.length>=courts)break;
+        const i4=ids4(m);
+        if(i4.some(id=>busy.has(id)))continue;
+        if(fresh&&used.has(mkey(m)))continue;
+        rm.push({t1:[...m.t1],t2:[...m.t2],s1:'',s2:'',done:false});
+        i4.forEach(id=>{busy.add(id);pc[id]=(pc[id]||0)+1;});
+        if(fresh)used.add(mkey(m));
+      }
+      if(rm.length>=courts)break;
+    }
+    const rest=players.filter(p=>rm.every(m=>!ids4(m).includes(p.id)));
+    rounds.push({num:r+1,matches:rm,rest,open:r===0});
+  }
+  pushToSupabase();go('schedule');renderSchedule();
+}
+function buildPool(){
+  const pairs=[];
+  if(mode==='free'){for(let i=0;i<players.length;i++)for(let j=i+1;j<players.length;j++)pairs.push([players[i],players[j]]);}
+  else{const ms=players.filter(p=>p.gender==='m'),fs=players.filter(p=>p.gender==='f');for(const m of ms)for(const f of fs)pairs.push([m,f]);}
+  const pool=[];
+  for(let i=0;i<pairs.length;i++)for(let j=i+1;j<pairs.length;j++){const[a,b]=[pairs[i],pairs[j]];if(new Set([a[0].id,a[1].id,b[0].id,b[1].id]).size===4)pool.push({t1:a,t2:b});}
+  return pool;
+}
+function ids4(m){return[m.t1[0].id,m.t1[1].id,m.t2[0].id,m.t2[1].id];}
+function mkey(m){return ids4(m).sort().join('-');}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}}
+
+// ═══════════════════════════════════════════
+// Schedule render
+let _currentTab='setup';
+function renderScheduleIfVisible(){if(_currentTab==='schedule')renderSchedule();}
+
+function renderSchedule(){
+  const el=$id('rounds-wrap');if(!el)return;
+  const allM=rounds.flatMap(r=>r.matches);
+  const done=allM.filter(m=>m.done).length,total=allM.length,pct=total?Math.round(done/total*100):0;
+  $id('prog-txt').textContent=`${done}/${total}场`;
+  $id('prog-bar').style.width=pct+'%';
+  $id('sch-stats').innerHTML=`
+    <div class="stat-box"><div class="stat-n">${total}</div><div class="stat-l">总场次</div></div>
+    <div class="stat-box"><div class="stat-n">${done}</div><div class="stat-l">已完成</div></div>
+    <div class="stat-box"><div class="stat-n">${total-done}</div><div class="stat-l">待进行</div></div>
+    <div class="stat-box"><div class="stat-n">${pct}%</div><div class="stat-l">完成率</div></div>
+  `;
+  $id('finish-wrap').style.display=(isAdmin&&pct===100&&total>0)?'block':'none';
+  const ar=rounds.findIndex(r=>r.matches.some(m=>!m.done));
+  el.innerHTML=rounds.map((r,ri)=>{
+    const rd=r.matches.filter(m=>m.done).length,isAct=ri===ar,allDone=rd===r.matches.length&&r.matches.length>0;
+    return `<div style="margin-bottom:7px">
+      <div class="round-hdr${isAct?' cur':''}" onclick="toggleRound(${ri})">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-weight:700;font-size:13px">第${r.num}轮</span>
+          ${isAct?'<span class="badge bg-ok">▶ 进行中</span>':''}
+          ${allDone?'<span class="badge bg-ok">✓ 完成</span>':''}
+          ${!isAct&&!allDone?'<span class="badge bg-gray">待开始</span>':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:#999">${rd}/${r.matches.length}场</span>
+          <span style="color:#bbb">${r.open?'▲':'▼'}</span>
+        </div>
+      </div>
+      ${r.open?`<div style="margin-top:5px">
+        ${r.matches.map((m,mi)=>{
+          const w1=m.done&&m.s1>m.s2,w2=m.done&&m.s2>m.s1;
+          if(isAdmin){
+            return `<div class="match-card${m.done?' done':''}">
+              <div class="ta"><div class="tm">${esc(m.t1[0].name)}${w1?'<span class="win-tag">胜</span>':''}</div><div class="ts">${esc(m.t1[1].name)}</div></div>
+              <div class="sc-col">
+                <span class="court-tag">场地${mi+1}</span>
+                <div class="sc-row">
+                  <input type="number" min="0" max="99" value="${m.s1}" placeholder="—" id="s1-${ri}-${mi}" onchange="liveScore(${ri},${mi})">
+                  <span class="vs">:</span>
+                  <input type="number" min="0" max="99" value="${m.s2}" placeholder="—" id="s2-${ri}-${mi}" onchange="liveScore(${ri},${mi})">
+                </div>
+                <button class="ok-btn${m.done?' edit':''}" onclick="confirmM(${ri},${mi})">${m.done?'✏ 修改':'✓ 确认'}</button>
+              </div>
+              <div class="tb"><div class="tm">${w2?'<span class="win-tag">胜</span>':''}${esc(m.t2[0].name)}</div><div class="ts">${esc(m.t2[1].name)}</div></div>
+            </div>`;
+          }else{
+            return `<div class="match-card${m.done?' done':''}">
+              <div class="ta"><div class="tm">${esc(m.t1[0].name)}${w1?'<span class="win-tag">胜</span>':''}</div><div class="ts">${esc(m.t1[1].name)}</div></div>
+              <div class="sc-col">
+                <span class="court-tag">场地${mi+1}</span>
+                ${m.done?`<div class="score-big">${m.s1}<span class="sep">:</span>${m.s2}</div><span class="badge bg-ok" style="font-size:10px">完成</span>`:'<div class="pending-txt">待开始</div>'}
+              </div>
+              <div class="tb"><div class="tm">${w2?'<span class="win-tag">胜</span>':''}${esc(m.t2[0].name)}</div><div class="ts">${esc(m.t2[1].name)}</div></div>
+            </div>`;
+          }
+        }).join('')}
+        ${r.rest.length?`<div class="rest-strip">💺 本轮休息：${r.rest.map(p=>esc(p.name)).join('、')}</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function liveScore(ri,mi){
+  if(!isAdmin)return;
+  const m=rounds[ri].matches[mi];
+  const v1=$id(`s1-${ri}-${mi}`).value,v2=$id(`s2-${ri}-${mi}`).value;
+  m.s1=v1===''?'':parseInt(v1);m.s2=v2===''?'':parseInt(v2);
+}
+function confirmM(ri,mi){
+  if(!guardAdmin())return;
+  const m=rounds[ri].matches[mi];
+  const v1=$id(`s1-${ri}-${mi}`).value,v2=$id(`s2-${ri}-${mi}`).value;
+  if(v1===''||v2===''){alert('请填入双方比分');return;}
+  const s1=parseInt(v1),s2=parseInt(v2);
+  if(isNaN(s1)||isNaN(s2)||s1<0||s2<0){alert('请输入有效比分');return;}
+  if(s1===s2){alert('羽毛球不能平局');return;}
+  if(m.done){
+    m.t1.forEach(p=>{(m.s1>m.s2?p.wins--:p.losses--);p.pf-=m.s1;p.pa-=m.s2;p.played--;});
+    m.t2.forEach(p=>{(m.s2>m.s1?p.wins--:p.losses--);p.pf-=m.s2;p.pa-=m.s1;p.played--;});
+  }
+  m.s1=s1;m.s2=s2;m.done=true;
+  m.t1.forEach(p=>{(s1>s2?p.wins++:p.losses++);p.pf+=s1;p.pa+=s2;p.played++;});
+  m.t2.forEach(p=>{(s2>s1?p.wins++:p.losses++);p.pf+=s2;p.pa+=s1;p.played++;});
+  const r=rounds[ri];
+  if(r.matches.every(mm=>mm.done)&&ri+1<rounds.length)rounds[ri+1].open=true;
+  pushToSupabase();renderSchedule();renderRanking();
+}
+function toggleRound(ri){rounds[ri].open=!rounds[ri].open;renderSchedule();}
+
+// ═══════════════════════════════════════════
+// Ranking
+function renderRanking(){
+  const sorted=[...players].sort((a,b)=>{
+    if(b.wins!==a.wins)return b.wins-a.wins;
+    const da=a.pf-a.pa,db=b.pf-b.pa;return db!==da?db-da:b.pf-a.pf;
+  });
+  $id('rank-body').innerHTML=sorted.map((p,i)=>{
+    const diff=p.pf-p.pa,wr=p.played>0?Math.round(p.wins/p.played*100):null,avg=p.played>0?(diff/p.played).toFixed(1):'—';
+    return `<tr>
+      <td class="${rcls(i)}" style="text-align:center">${medals(i)||i+1}</td>
+      <td>${esc(p.name)}${mode==='mixed'?` <span class="badge ${p.gender==='m'?'bg-m':'bg-f'}">${p.gender==='m'?'男':'女'}</span>`:''}</td>
+      <td style="text-align:center" class="pos">${p.wins}</td>
+      <td style="text-align:center;color:#991b1b">${p.losses}</td>
+      <td style="text-align:center">${wr!==null?`<span class="wr-bar"><span class="wr-fill" style="width:${wr}%"></span></span><span style="font-size:12px;color:${wr>=60?'#166534':wr<40?'#991b1b':'#7a5c00'}">${wr}%</span>`:'—'}</td>
+      <td style="text-align:center" class="${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff}</td>
+      <td style="text-align:center;color:#666">${avg}</td>
+    </tr>`;
+  }).join('');
+  const maxP=Math.max(...players.map(p=>p.played),1);
+  $id('load-chart').innerHTML=sorted.map(p=>`
+    <div class="ld-row">
+      <span style="width:68px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(p.name)}</span>
+      <div class="ld-track"><div class="ld-fill" style="width:${Math.round(p.played/maxP*100)}%"></div></div>
+      <span style="font-size:12px;color:#999;width:36px;text-align:right">${p.played}场</span>
+      <span style="font-size:12px;width:44px;text-align:right" class="${(p.pf-p.pa)>=0?'pos':'neg'}">${p.pf-p.pa>=0?'+':''}${p.pf-p.pa}</span>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// Finish session
+function finishSession(){
+  if(!guardAdmin())return;
+  if(!rounds.some(r=>r.matches.some(m=>m.done))){alert('还没有任何比分记录');return;}
+  if(!rounds.every(r=>r.matches.every(m=>m.done))&&!confirm('还有未完成场次，确定结束？'))return;
+  history.unshift({id:'h'+Date.now(),date:new Date().toLocaleDateString('zh-CN'),mode,courts,numRounds,
+    players:players.map(p=>({name:p.name,gender:p.gender,wins:p.wins,losses:p.losses,pf:p.pf,pa:p.pa,played:p.played}))});
+  players.forEach(p=>{p.wins=0;p.losses=0;p.pf=0;p.pa=0;p.played=0;});
+  rounds=[];
+  pushToSupabase();alert('✅ 已计入历史总榜！');go('hall');
+}
+
+// ═══════════════════════════════════════════
+// Hall of fame
+function hallStats(){
+  const s={};
+  for(const sess of history)for(const p of sess.players){
+    if(!s[p.name])s[p.name]={sessions:0,wins:0,losses:0,played:0,pf:0,pa:0};
+    s[p.name].sessions++;s[p.name].wins+=p.wins;s[p.name].losses+=p.losses;
+    s[p.name].played+=p.played;s[p.name].pf+=p.pf;s[p.name].pa+=p.pa;
+  }
+  return s;
+}
+function score(st){return st.wins*2+Math.floor((st.pf-st.pa)/10);}
+function renderHall(){
+  const hs=hallStats();
+  $id('sess-cnt').textContent=history.length;
+  if(!Object.keys(hs).length){
+    $id('podium').innerHTML='';
+    $id('hall-body').innerHTML='<tr><td colspan="7"><div class="empty">还没有历史记录</div></td></tr>';
+    $id('sess-list').innerHTML='<div class="empty">暂无历史赛事</div>';
+    return;
+  }
+  const sorted=Object.entries(hs).sort((a,b)=>score(b[1])-score(a[1])||b[1].wins-a[1].wins);
+  const top=sorted.slice(0,3),order=[1,0,2],heights=[65,95,50],colors=['#C0C0C0','#FFD700','#CD7F32'];
+  $id('podium').innerHTML=top.length>=2?`<div class="podium">${order.map(i=>{if(!top[i])return'';const[name,st]=top[i],wr=st.played>0?Math.round(st.wins/st.played*100):0;
+    return `<div class="pod"><div class="pod-name">${medals(i)} ${esc(name)}</div><div class="pod-sub">${score(st)}分·${wr}%</div><div class="pod-block" style="height:${heights[i]}px;background:${colors[i]}22;border:2px solid ${colors[i]}88">${medals(i)}</div></div>`;}).join('')}</div>`:'';
+  $id('hall-body').innerHTML=sorted.map(([name,st],i)=>{
+    const wr=st.played>0?Math.round(st.wins/st.played*100):0,diff=st.pf-st.pa;
+    return `<tr>
+      <td class="${rcls(i)}" style="text-align:center">${medals(i)||i+1}</td>
+      <td><strong>${esc(name)}</strong></td>
+      <td style="text-align:center">${st.sessions}</td>
+      <td style="text-align:center" class="pos">${st.wins}<span style="color:#999;font-weight:400">/${st.played}</span></td>
+      <td><span class="wr-bar"><span class="wr-fill" style="width:${wr}%"></span></span><span style="font-size:12px;color:${wr>=60?'#166534':wr<40?'#991b1b':'#7a5c00'}">${wr}%</span></td>
+      <td style="text-align:center" class="${diff>=0?'pos':'neg'}">${diff>=0?'+':''}${diff}</td>
+      <td style="text-align:center;font-weight:700" class="pos">${score(st)}</td>
+    </tr>`;}).join('');
+  $id('sess-list').innerHTML=!history.length?'<div class="empty">暂无</div>':history.map((s,si)=>{
+    const sp=[...s.players].sort((a,b)=>b.wins-a.wins);
+    return `<div class="sess-card">
+      <div class="sess-hdr">
+        <div><span style="font-weight:700;font-size:13px">${esc(s.date)}</span>
+          <span class="badge bg-gray" style="margin-left:6px">${s.mode==='mixed'?'混双':'自由双打'}</span>
+          <span class="badge bg-gray" style="margin-left:4px">${s.courts}场地×${s.numRounds}轮</span></div>
+        ${isAdmin?`<button class="btn btn-sm btn-red" onclick="delSess(${si})">删除</button>`:''}
+      </div>
+      <div class="sess-body">${sp.slice(0,3).map((p,i)=>`<span style="font-size:12px;margin-right:10px">${medals(i)} ${esc(p.name)} <span style="color:#999">${p.wins}胜${p.losses}负</span></span>`).join('')}${sp.length>3?`<span style="font-size:12px;color:#ccc">…共${s.players.length}人</span>`:''}</div>
+    </div>`;}).join('');
+}
+function delSess(idx){if(!guardAdmin())return;if(!confirm('确定删除？'))return;history.splice(idx,1);pushToSupabase();renderHall();}
+
+// ═══════════════════════════════════════════
+// Tab switch
+function go(tab){
+  _currentTab=tab;
+  ['setup','schedule','ranking','hall','members'].forEach((t,i)=>{
+    $id('p-'+t).style.display=t===tab?'block':'none';
+    document.querySelectorAll('.tab')[i].classList.toggle('active',t===tab);
+  });
+  if(tab==='schedule')renderSchedule();
+  if(tab==='ranking')renderRanking();
+  if(tab==='hall')renderHall();
+  if(tab==='members')renderMemberDBUI();
+}
+
+// ═══════════════════════════════════════════
+// Boot
+(function(){
+  loadCfg();
+  // Auto-fill from URL params (viewer link)
+  const p=new URLSearchParams(window.location.search);
+  const pUrl=p.get('url'),pKey=p.get('key'),pRole=p.get('role');
+  if(pUrl&&pKey){
+    CFG={url:pUrl,key:pKey,role:pRole||'viewer'};
+    localStorage.setItem(CFG_KEY,JSON.stringify(CFG));
+  }
+  if(CFG){
+    $id('cfg-overlay').style.display='none';
+    $id('main-app').style.display='block';
+    initSupabase();
+  }else{
+    // Pre-fill URL if in params
+    if(pUrl)$id('cfg-url').value=pUrl;
+    if(pKey)$id('cfg-key').value=pKey;
+    if(pRole)pickRole(pRole);
+  }
+})();
+</script>
+</body>
+</html>
